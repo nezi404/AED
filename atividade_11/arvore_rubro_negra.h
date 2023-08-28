@@ -10,169 +10,296 @@ struct arvore_rubro_negra
     int altura;
 };
 
-typedef struct raiz
-{
-    No *conteudo;
-    int cor;
-}Raiz;
-
-Raiz *criar_raiz()
+No *criar_raiz(int dado)
 {   
-    Raiz *temp_raiz = (Raiz *)malloc(sizeof(Raiz));
-    temp_raiz->conteudo =NULL;
-    temp_raiz->cor=0;
+    No *temp_raiz = (No *)malloc(sizeof(No));
+    temp_raiz->esquerdo =NULL;
+    temp_raiz->direito = NULL;
+    temp_raiz->altura=0;
+    temp_raiz->pai = NULL;
+    temp_raiz->dado = dado;
+    temp_raiz->cor = 0;
 
     return temp_raiz;
 }
-/*
-void inserir_direito(int dado, No *no)
-{
-    if(no->direito == NULL)
-    {
-        No *temp_no = (No *)malloc(sizeof(No));
 
-        temp_no->dado = dado;
-        temp_no->direito = NULL;
-        temp_no->esquerdo = NULL;
-        temp_no->pai = no;
-        temp_no->cor = 1;
-
-        no->direito = temp_no;
-    }
+int altura(No * no)
+{ 
+    if (no != NULL)
+        return no->altura;
     else
-    {
-        if (dado > no->direito->dado)
-            inserir_direito(dado, no->direito);
-        
-        if (dado < no->esquerdo->dado)
-            inserir_esquerdo(dado, no->direito);
-    }
-
-
+        return -1;
 }
 
-void inserir_esquerdo(int dado, No *no)
+int maior(int a, int b)
 {
-    if(no->esquerdo == NULL)
-    {
-        No *temp_no = (No *)malloc(sizeof(No));
-
-        temp_no->dado = dado;
-        temp_no->direito = NULL;
-        temp_no->esquerdo = NULL;
-        temp_no->pai = no;
-        temp_no->cor = 1;
-
-        no->esquerdo = temp_no;
-    }
+    if (a > b)
+        return a;
     else
-    {
-        if (dado > no->direito->dado)
-            inserir_direito(dado, no->esquerdo);
-        
-        if (dado < no->esquerdo->dado)
-            inserir_esquerdo(dado, no->esquerdo);
-    }
-
+        return b;
 }
 
-No * adicionar_no(int dado, Raiz *raiz)
+int verifica_balancear(No *no)
 {
-    No *temp_no = (No *)malloc(sizeof(No));
-
-    if (raiz->conteudo == NULL)
+    if (no != NULL)
     {
-        temp_no->dado=dado;
-        temp_no->direito=NULL;
-        temp_no->esquerdo=NULL;
-        temp_no->cor=0;
-        temp_no->pai=NULL;
-        raiz->conteudo = temp_no;
+        return (altura(no->esquerdo) - altura(no->direito));
+    }
+    return 0;
+}
+
+No* rotacao_esquerda(No *no)
+{
+    No * temp_no_filho_esquerdo, * temp_no_direito;
+
+    temp_no_direito = no->direito;
+    temp_no_filho_esquerdo = temp_no_direito->esquerdo;
+
+    temp_no_direito->esquerdo=no;
+    no->direito = temp_no_filho_esquerdo;
+
+    no->altura = maior(altura(no->direito), altura(no->esquerdo)) + 1;
+    temp_no_direito->altura = maior(altura(temp_no_direito->direito), altura(temp_no_direito->esquerdo)) + 1;
+    temp_no_direito->pai = no;
+    no->pai = temp_no_direito;
+
+    return temp_no_direito;
+}
+
+No* rotacao_direita(No *no)
+{
+    No * temp_no_filho_direito, * temp_no_esquerdo;
+
+    temp_no_esquerdo = no->esquerdo;
+    temp_no_filho_direito = temp_no_esquerdo->direito;
+
+    temp_no_esquerdo->direito=no;
+    no->esquerdo = temp_no_filho_direito;
+
+    no->altura = maior(altura(no->direito), altura(no->esquerdo)) + 1;
+    temp_no_esquerdo->altura = maior(altura(temp_no_esquerdo->direito), altura(temp_no_esquerdo->esquerdo)) + 1;
+    temp_no_esquerdo->pai = no;
+    no->pai = temp_no_esquerdo;
+
+    return temp_no_esquerdo;
+}
     
-    } 
+No* rotacao_direita_esquerda(No *no)
+{
+    no->direito = rotacao_direita(no->direito);
 
-    else{
-        if (dado > raiz->conteudo->dado)
-            inserir_direito(dado, raiz->conteudo);
-        
-        if (dado < raiz->conteudo->dado)
-            inserir_esquerdo(dado, raiz->conteudo);
+    return rotacao_esquerda(no);
+}
+
+No* rotacao_esquerda_direita(No *no)
+{
+    no->esquerdo = rotacao_esquerda(no->esquerdo);
+    
+    return rotacao_direita(no);
+}
+
+No* colorir_arvore(No * no, No* root)
+{   
+
+    if (no->cor == 1)
+    {   
+        if(no->pai != NULL)
+        {   
+            if (no->pai->cor == 1)
+            {   
+                no->cor=0;
+                
+                //se o pai e o tio forem vermelhos
+                if((no->pai != no->pai->pai->esquerdo && no->pai->pai->esquerdo != NULL) && no->pai->pai->esquerdo->cor == 1)
+                {
+                    printf("tio esquerdo vermelho!\n");
+                    no->pai->pai->esquerdo->cor=0;
+                    printf("tio esquerdo vermelho!\n");
+                }
+                if((no->pai != no->pai->pai->direito && no->pai->pai->direito != NULL) && no->pai->pai->direito->cor == 1)
+                {   
+                    printf("tio direito vermelho!\n");
+                    no->pai->pai->direito->cor=0;
+                    printf("tio direito vermelho!\n");
+                }
+            } 
+        }
     }
 
-
+    return no;
 }
-*/
+
+No* balancear_arvore(No *no)
+{   
+    int altura_raiz = verifica_balancear(no);
+
+    //se a arvore tender para a direita (altura raiz < -1) e um filho a direita
+    if((altura_raiz < -1) && verifica_balancear(no->direito)<=0)
+    {   
+        printf("desbalanceada, tende para a direita (altura raiz > -1) e um filho a direita\n");
+        no = rotacao_esquerda(no);
+        no->pai=NULL;
+
+    }
+    else
+    {   
+        // se o no estiver tendendo para esquerda (altura_raiz > 1) e um filho a esquerda
+        if((altura_raiz > 1) && verifica_balancear(no->esquerdo) >= 0)
+        {
+            printf("desbalanceada, tendendo para esquerda (altura_raiz > 1) e um filho a esquerda\n");            
+            no = rotacao_direita(no);
+            no->pai=NULL;
+
+        }        
+        else
+        {   
+            //se a arvore tender para a direita (altura raiz < -1) e um filho a esquerda
+            if((altura_raiz < -1) && verifica_balancear(no->direito) > 0)
+            {
+                printf("desbalanceada, tende para a direita (altura raiz < -1) e um filho a esquerda\n");                
+                no = rotacao_direita_esquerda(no);
+                no->pai=NULL;
+
+            }
+            else
+            {   
+                // se o no estiver tendendo para esquerda (altura_raiz > 1) e um filho a direita
+                if((altura_raiz > 1) && verifica_balancear(no->esquerdo) < 0)
+                    {
+                        printf("desbalanceada, tendendo para esquerda (altura_raiz > 1) e um filho a direita\n");            
+                        no = rotacao_esquerda_direita(no);
+                        no->pai=NULL;
+
+                    }
+            }
+        }
+    }
+    
+    printf("Foi balanceada\n");
+    return no;
+}
 
 /*
-void inserir_versao_3(No **raiz, int num){
-    No *aux = *raiz;
-    while(aux){
-        if(num < aux->dado)
-            raiz = &aux->esquerdo;
-        else
-            raiz = &aux->direito;
-        aux = *raiz;
-    }
-    aux = malloc(sizeof(No));
-    aux->dado = num;
-    aux->esquerdo = NULL;
-    aux->direito= NULL;
-    aux->altura=0;
-    *raiz = aux;
-}
-*/
-No* criar_no(int dado)
-{
-    No *temp_no = (No *)malloc(sizeof(No));
-    temp_no->dado=dado;
-    temp_no->direito=NULL;
-    temp_no->esquerdo=NULL;
-    temp_no->cor=0;
-    temp_no->pai=NULL;
-    temp_no->altura=0;
-
-    return temp_no;
-}
-
 No * inserir_no(No *no, int dado)
 {
-    if(no == NULL)
-        no = criar_no(dado);
+    No *temp = (No *)malloc(sizeof(No));
+    temp=no;
+
+    if(temp == NULL){
+        temp = criar_raiz(dado);
+        printf("No %d \n", temp->dado);
+    }
     else
-    {
-        if(dado > no->dado)
-            no->direito = inserir_no(no->direito, dado);
+    {   
+        printf("Agora no else\n");
+        if(dado > no->dado){
+            temp->direito = inserir_no(temp->direito, dado);
+            temp->direito->pai = no;
+            temp->direito->cor = 1;
+            temp->direito = colorir_arvore(temp->direito, no);
+        }
 
         else
-        {   if(dado < no->dado)
-            no->esquerdo = inserir_no(no->esquerdo, dado);
+        {   if(dado < no->dado){
+            temp->esquerdo = inserir_no(temp->esquerdo, dado);
+            temp->esquerdo->pai = no;
+            temp->esquerdo->cor = 1;
+            temp->esquerdo = colorir_arvore(temp->esquerdo, no);
+            }
             else
                 printf("Esse dado jah estah guardado!!!\n\n");
         }
     }
-    if(altura(no->direito) > altura(no->esquerdo))
-        no->altura = no->direito->altura; 
-
-    if(altura(no->direito) < altura(no->esquerdo))
-        no->altura = no->esquerdo->altura; 
     
-    return no;
+        printf("NO primmm!!!!!!!\n");
+
+    temp->altura = maior(altura(temp->esquerdo), altura(temp->direito)) + 1;
+        printf("NO segggg!!!!!!!\n");
+    
+    temp = balancear_arvore(temp);
+    printf("NO inserido/criado!!!!!!!!!!\n");
+    return temp;
 }
+*/
 
-int altura(No *no)
-{
-    if (no==NULL){
-        return -1;
+
+void inserir_no_2(No ** no, int dado)
+{   No *temp = (No*)malloc(sizeof(No));
+    temp = criar_raiz(dado);
+
+    if (*no == NULL)
+    {
+        *no = temp;
     }
-
     else
     {   
-       return no->altura;     
+        No *temp_2 = (No*)malloc(sizeof(No));
+        No *temp_3 = (No*)malloc(sizeof(No));
+        temp_2 = NULL;
+        temp_3 = *no;
+
+        while (temp_3 != NULL)
+        {
+            temp_2 = temp_3;
+            if (temp->dado < temp_3->dado)
+                temp_3 = temp_3->esquerdo;
+            if (temp->dado > temp_3->dado)
+                temp_3 = temp_3->direito;
+        }
+        temp->pai = temp_2;
+        if (temp->dado > temp_2->dado){
+            temp_2->direito = temp;            
+        }
+        if (temp->dado < temp_2->dado){
+            temp_2->esquerdo = temp;
+        }
+        temp->cor = 1; 
+        temp->altura = maior(altura(temp->esquerdo), altura(temp->direito)) + 1;
+        temp = balancear_arvore(temp);
+        temp = colorir_arvore(temp, *no);
+        
     }
-    
 }
 
-No* balancear_arvore(No *no)
+void inserir_no_3(No **no, int dado)
+{
+// Allocate memory for new node
+    No *z = (No*)malloc(sizeof(No));
+    z->dado = dado;
+    z->esquerdo = z->direito = z->pai = NULL;
+
+     //if root is null make z as root
+    if (*no == NULL)
+    {
+        z->cor = 0;
+        *no = z;
+    }
+    else
+    {
+        No *y = NULL;
+        No *x = *no;
+
+        // Follow standard BST insert steps to first insert the node
+        while (x != NULL)
+        {
+            y = x;
+            if (z->dado < x->dado)
+                x = x->esquerdo;
+            else
+                x = x->direito;
+        }
+        z->pai = y;
+        if (z->dado > y->dado)
+            y->direito = z;
+        else
+            y->esquerdo = z;
+        z->cor = 1;
+        z->altura = maior(altura(z->esquerdo), altura(z->direito)) + 1;
+        z = balancear_arvore(z);
+        z = colorir_arvore(z, *no);
+      
+    }
+}
 
 void imprimir(No *no)
 {
@@ -181,5 +308,33 @@ void imprimir(No *no)
         imprimir(no->esquerdo);
         printf("%d ", no->dado);
         imprimir(no->direito);
+    }
+}
+
+void imprimir_pais(No *no)
+{
+    if(no != NULL)
+    {   
+        
+        imprimir_pais(no->esquerdo);
+        
+        if(no->pai != NULL)
+            printf("No %d , no->pai %d\n", no->dado, no->pai->dado); 
+        else
+            printf("No %d , no->pai @\n", no->dado);
+
+        imprimir_pais(no->direito);
+        
+    }
+        
+}
+
+void imprimir_cores(No *no)
+{
+    if(no != NULL)
+    {   
+        imprimir_cores(no->esquerdo);
+        printf("No %d cor %d\n", no->dado, no->cor);
+        imprimir_cores(no->direito);
     }
 }
